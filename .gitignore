@@ -1,0 +1,8 @@
+/api
+/bin/
+.env
+.env.*
+!.env.example
+*.test
+coverage.out
+.DS_Store
