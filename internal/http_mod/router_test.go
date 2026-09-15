@@ -13,17 +13,22 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
-type fakeUserRepository struct {
-	get  func(context.Context, bson.ObjectID) (user.User, error)
-	list func(context.Context) ([]user.User, error)
+type fakeUserService struct {
+	create func(context.Context, user.CreateUserInput) (user.User, error)
+	get    func(context.Context, bson.ObjectID) (user.User, error)
+	list   func(context.Context) ([]user.User, error)
 }
 
-func (f fakeUserRepository) List(ctx context.Context) ([]user.User, error) {
+func (f fakeUserService) List(ctx context.Context) ([]user.User, error) {
 	return f.list(ctx)
 }
 
-func (f fakeUserRepository) GetByID(ctx context.Context, id bson.ObjectID) (user.User, error) {
+func (f fakeUserService) GetByID(ctx context.Context, id bson.ObjectID) (user.User, error) {
 	return f.get(ctx, id)
+}
+
+func (f fakeUserService) Create(ctx context.Context, input user.CreateUserInput) (user.User, error) {
+	return f.create(ctx, input)
 }
 
 func TestGetUser(t *testing.T) {
@@ -40,7 +45,7 @@ func TestGetUser(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			called := false
-			repo := fakeUserRepository{get: func(ctx context.Context, got bson.ObjectID) (user.User, error) {
+			service := fakeUserService{get: func(ctx context.Context, got bson.ObjectID) (user.User, error) {
 				called = true
 				if got != id {
 					t.Error("incorrect lookup ID")
@@ -51,12 +56,12 @@ func TestGetUser(t *testing.T) {
 				return user.User{ID: id, Name: "Test user", Password: "private hash"}, tc.err
 			}}
 			response := httptest.NewRecorder()
-			ApplicationRouter(handler.NewUserHandler(repo)).ServeHTTP(response, httptest.NewRequest("GET", "/users/"+tc.path, nil))
+			ApplicationRouter(handler.NewUserHandler(service)).ServeHTTP(response, httptest.NewRequest("GET", "/users/"+tc.path, nil))
 			if response.Code != tc.status {
 				t.Fatalf("status = %d, want %d", response.Code, tc.status)
 			}
 			if called != (tc.status != 400) {
-				t.Fatal("incorrect repository invocation")
+				t.Fatal("incorrect service invocation")
 			}
 			if response.Header().Get("Content-Type") != "application/json" {
 				t.Fatal("expected JSON")
@@ -91,18 +96,18 @@ func TestListUsers(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			called := false
-			repo := fakeUserRepository{list: func(ctx context.Context) ([]user.User, error) {
+			service := fakeUserService{list: func(ctx context.Context) ([]user.User, error) {
 				called = true
 				if _, ok := ctx.Deadline(); !ok {
 					t.Error("missing query deadline")
 				}
 				return tc.users, tc.err
 			}}
-			router := ApplicationRouter(handler.NewUserHandler(repo))
+			router := ApplicationRouter(handler.NewUserHandler(service))
 			response := httptest.NewRecorder()
 			router.ServeHTTP(response, httptest.NewRequest("GET", "/users", nil))
 			if !called {
-				t.Fatal("repository not called")
+				t.Fatal("service not called")
 			}
 			if response.Code != tc.status {
 				t.Fatalf("status = %d", response.Code)
@@ -138,7 +143,7 @@ func TestListUsers(t *testing.T) {
 }
 
 func TestRoutes(t *testing.T) {
-	router := ApplicationRouter(handler.NewUserHandler(fakeUserRepository{list: func(context.Context) ([]user.User, error) { return nil, nil }}))
+	router := ApplicationRouter(handler.NewUserHandler(fakeUserService{list: func(context.Context) ([]user.User, error) { return nil, nil }}))
 	for _, tc := range []struct {
 		name, method, path string
 		status             int
@@ -148,7 +153,7 @@ func TestRoutes(t *testing.T) {
 		{"greeting", "GET", "/hello", 200, "Hello from Go"},
 		{"invalid user ID", "GET", "/users/99", 400, "{\"error\":\"Invalid user ID\"}\n"},
 		{"unknown route", "GET", "/missing", 404, ""},
-		{"unsupported method", "POST", "/users", 405, ""},
+		{"unsupported method", "DELETE", "/users", 405, ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			response := httptest.NewRecorder()

@@ -14,3 +14,9 @@ type User struct {
 	CreatedAt time.Time     `bson:"createdAt" json:"createdAt"`
 	UpdatedAt time.Time     `bson:"updatedAt" json:"updatedAt"`
 }
+
+type CreateUserInput struct {
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}

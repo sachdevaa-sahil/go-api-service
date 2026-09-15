@@ -13,6 +13,7 @@ import (
 	apihttp "go-api-service/internal/http_mod"
 	"go-api-service/internal/http_mod/handler"
 	"go-api-service/internal/storage/mongodb"
+	"go-api-service/internal/user"
 )
 
 func main() {
@@ -45,8 +46,8 @@ func run() error {
 	log.Println("Connected to MongoDB")
 
 	db := client.Database(cfg.MongoDatabase)
-	userRepository := mongodb.NewUserRepository(db)
-	userHandler := handler.NewUserHandler(userRepository)
+	userService := user.NewService(db)
+	userHandler := handler.NewUserHandler(userService)
 	router := apihttp.ApplicationRouter(userHandler)
 	server := apihttp.NewServer(":8000", router)
 	log.Println("Starting server on port 8000")

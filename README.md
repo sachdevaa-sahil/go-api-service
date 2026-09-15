@@ -1,6 +1,6 @@
 # Go API service
 
-A Go HTTP API using the standard library. Both user endpoints read from MongoDB; no write endpoints are implemented.
+A Go HTTP API using the standard library. User endpoints read from and create users in MongoDB.
 
 ## Run
 
@@ -22,6 +22,7 @@ The server listens on port `8000`. Stop it with Ctrl+C. If that port is occupied
 | GET | `/hello` | Plain-text greeting |
 | GET | `/users` | Up to 100 MongoDB users sorted by `_id`, without password hashes |
 | GET | `/users/{id}` | MongoDB user object, or JSON error |
+| POST | `/users` | Create a user; returns 201 with the user and a Location header |
 
 ```sh
 curl -i http://localhost:8000/health
@@ -36,8 +37,9 @@ curl -i http://localhost:8000/users/REPLACE_WITH_OBJECT_ID
 - `cmd/api`: application entry point.
 - `internal/http_mod`: server configuration, routes, and handlers.
 - `internal/config`: environment configuration.
-- `internal/user`: MongoDB user model, with a shared not-found error and a service placeholder.
-- `internal/storage/mongodb`: shared client setup and user queries.
+- `internal/user/model.go`: User and creation-input data shapes.
+- `internal/user/service.go`: All user operations: validation, password hashing, and MongoDB reads/writes.
+- `internal/storage/mongodb`: shared MongoDB connection setup.
 - Middleware files: placeholders for later work.
 
 ## Checks

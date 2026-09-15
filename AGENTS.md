@@ -21,7 +21,7 @@ Source code is authoritative for current behavior. Inspect the relevant implemen
 
 - Use the Go version from `go.mod` and MongoDB driver v2 import paths. Keep standard-library `net/http` routing unless a task requires otherwise.
 - Compose dependencies in `cmd/api/main.go`. Reuse the shared MongoDB client; never connect per request or hide connections in package globals.
-- Register routes in `internal/http_mod/router.go`. Handlers own HTTP parsing/status codes; MongoDB repositories own queries. The current handler consumes a small repository interface. A service layer is not implemented yet.
+- Register routes in `internal/http_mod/router.go`. Handlers own HTTP parsing/status codes. One user service owns validation, hashing, and MongoDB queries. The handler consumes a single UserService interface; do not add a separate repository layer without a concrete need.
 - Pass `context.Context` as the first argument for database work. Derive request work from `r.Context()`, apply bounded timeouts, and defer cancellation. Use independent bounded contexts for cleanup.
 - Return errors from lower layers. Wrap with `%w` when preserving causes; inspect with `errors.Is`. Keep process termination in `main`, after `run` returns so deferred cleanup runs.
 - Use the existing `writeJSON` helper. Preserve empty arrays, ObjectID validation, generic client-facing database errors, and password exclusion via `json:"-"`.
@@ -30,6 +30,6 @@ Source code is authoritative for current behavior. Inspect the relevant implemen
 
 ## Verification and reporting
 
-Format changed Go files with `gofmt`. For behavior changes run `go test ./...`, `go vet ./...`, and `git diff --check` from the repository root. Use fake repositories for HTTP tests; cover changed success/error behavior rather than mirroring implementation. Documentation-only edits need link/accuracy and diff checks, not new Go tests.
+Format changed Go files with `gofmt`. For behavior changes run `go test ./...`, `go vet ./...`, and `git diff --check` from the repository root. Use fake services for HTTP tests; cover changed success/error behavior rather than mirroring implementation. Documentation-only edits need link/accuracy and diff checks, not new Go tests.
 
-Do not equate fake-repository tests with a verified live MongoDB query. Report what changed, which checks actually ran, and any unverified behavior. Keep endpoint/model/config documentation synchronized when those contracts change.
+Do not equate fake-service tests with a verified live MongoDB query. Report what changed, which checks actually ran, and any unverified behavior. Keep endpoint/model/config documentation synchronized when those contracts change.
