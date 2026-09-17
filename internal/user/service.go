@@ -52,12 +52,13 @@ func prepareUser(input CreateUserInput) (User, error) {
 	now := time.Now().UTC()
 
 	newUser := User{
-		ID:        bson.NewObjectID(),
-		Name:      strings.TrimSpace(input.Name),
-		Email:     strings.TrimSpace(input.Email),
-		Password:  string(hash),
-		CreatedAt: now,
-		UpdatedAt: now,
+		ID:           bson.NewObjectID(),
+		Name:         strings.TrimSpace(input.Name),
+		Email:        strings.TrimSpace(input.Email),
+		Introduction: strings.TrimSpace(input.Introduction),
+		Password:     string(hash),
+		CreatedAt:    now,
+		UpdatedAt:    now,
 	}
 
 	return newUser, nil
